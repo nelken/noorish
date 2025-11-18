@@ -19,7 +19,7 @@ const VoiceInterview: React.FC = () => {
   const [listening, setListening] = useState<boolean>(false);
   const [status, setStatus] = useState<string>("Idle");
 
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const recognitionRef = useRef<any | null>(null);
   const currentIndexRef = useRef<number>(0); // keep in sync with currentIndex for callbacks
 
   useEffect(() => {
@@ -53,12 +53,12 @@ const VoiceInterview: React.FC = () => {
       setStatus("Stopped listening.");
     };
 
-    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+    recognition.onerror = (event: any) => {
       console.error("SpeechRecognition error:", event.error);
       setStatus(`Error: ${event.error}`);
     };
 
-    recognition.onresult = (event: SpeechRecognitionEvent) => {
+    recognition.onresult = (event: any) => {
       const transcript = event.results[0][0].transcript.trim();
       if (!transcript) return;
 
