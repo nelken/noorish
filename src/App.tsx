@@ -1,4 +1,4 @@
-import React from "react";
+
 import VoiceQuestionAnswer from "./VoiceQuestionAnswer";
 
 function App() {
