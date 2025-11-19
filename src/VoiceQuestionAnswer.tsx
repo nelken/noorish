@@ -3,7 +3,6 @@ import "./VoiceQuestionAnswer.css";
 
 // Hardcoded questions asked one after the other
 const QUESTIONS: string[] = [
-  "try",
   "In a typical work week, how many days do you feel completely used up by the end of the day?",
   "When you finish work, how long does it take you to feel like yourself again?",
   "When you think about your work itself — the purpose behind what you do — how do you feel about it these days?",
