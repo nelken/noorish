@@ -3,6 +3,7 @@ import "./VoiceQuestionAnswer.css";
 
 // Hardcoded questions asked one after the other
 const QUESTIONS: string[] = [
+  "try",
   "In a typical work week, how many days do you feel completely used up by the end of the day?",
   "When you finish work, how long does it take you to feel like yourself again?",
   "When you think about your work itself — the purpose behind what you do — how do you feel about it these days?",
@@ -20,8 +21,10 @@ const VoiceInterview: React.FC = () => {
   const [listening, setListening] = useState<boolean>(false);
   const [status, setStatus] = useState<string>("Idle");
 
-  const recognitionRef = useRef<any | null>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
   const currentIndexRef = useRef<number>(0); // keep in sync with currentIndex for callbacks
+  const shouldListenRef = useRef<boolean>(false);
+  const isRecognizingRef = useRef<boolean>(false);
 
   useEffect(() => {
     currentIndexRef.current = currentIndex;
@@ -42,25 +45,39 @@ const VoiceInterview: React.FC = () => {
 
     recognition.lang = "en-US";
     recognition.interimResults = false; // final results only
-    recognition.continuous = false;     // one phrase per start()
+    recognition.continuous = true;      // keep streaming until stopped
 
     recognition.onstart = () => {
       setListening(true);
       setStatus("Listening…");
+      isRecognizingRef.current = true;
     };
 
     recognition.onend = () => {
       setListening(false);
-      setStatus("Stopped listening.");
+      isRecognizingRef.current = false;
+      if (shouldListenRef.current) {
+        setStatus("Waiting for more speech…");
+        try {
+          recognition.start();
+        } catch (err) {
+          console.warn("Unable to restart recognition", err);
+        }
+      } else {
+        setStatus("Stopped listening.");
+      }
     };
 
-    recognition.onerror = (event: any) => {
+    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
       console.error("SpeechRecognition error:", event.error);
       setStatus(`Error: ${event.error}`);
     };
 
-    recognition.onresult = (event: any) => {
-      const transcript = event.results[0][0].transcript.trim();
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      const resultIndex = event.resultIndex;
+      const result =
+        event.results[resultIndex] ?? event.results[event.results.length - 1];
+      const transcript = result?.[0]?.transcript.trim();
       if (!transcript) return;
 
       const idx = currentIndexRef.current;
@@ -75,11 +92,18 @@ const VoiceInterview: React.FC = () => {
     };
 
     return () => {
+      shouldListenRef.current = false;
       recognition.stop();
     };
   }, []);
 
   const startListening = () => {
+    if (!recognitionRef.current) return;
+    if (isRecognizingRef.current) {
+      setStatus("Already listening…");
+      return;
+    }
+    shouldListenRef.current = true;
     try {
       recognitionRef.current?.start();
     } catch (err) {
@@ -88,6 +112,8 @@ const VoiceInterview: React.FC = () => {
   };
 
   const stopListening = () => {
+    shouldListenRef.current = false;
+    isRecognizingRef.current = false;
     recognitionRef.current?.stop();
   };
 
