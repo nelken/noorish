@@ -149,7 +149,7 @@ const VoiceInterview: React.FC = () => {
         <span className="status-pill">{status}</span>
       </div>
 
-      <h1>Voice Interview</h1>
+      <h1>Burnout Assessment</h1>
 
       <p className="question-text">{currentQuestion}</p>
 
