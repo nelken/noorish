@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import "./VoiceQuestionAnswer.css";
 
 // Hardcoded questions asked one after the other
 const QUESTIONS: string[] = [
@@ -142,82 +143,83 @@ const VoiceInterview: React.FC = () => {
   const finished = currentIndex === QUESTIONS.length - 1;
 
   return (
-    <div style={{ maxWidth: 700, margin: "40px auto", textAlign: "left" }}>
+    <div className="voice-shell">
+      <div className="question-meta">
+        <span>Question {currentIndex + 1} of {QUESTIONS.length}</span>
+        <span className="status-pill">{status}</span>
+      </div>
+
       <h1>Voice Interview</h1>
 
-      <p style={{ marginBottom: 8 }}>
-        Question {currentIndex + 1} of {QUESTIONS.length}
-      </p>
+      <p className="question-text">{currentQuestion}</p>
 
-      <p style={{ marginBottom: 16, fontWeight: "bold" }}>
-        {currentQuestion}
-      </p>
-
-      <div style={{ marginBottom: 16 }}>
+      <div className="control-row">
         <button
+          className="btn btn-primary"
           onClick={speakCurrentQuestion}
-          style={{ padding: "8px 16px", marginRight: 10 }}
         >
           Ask This Question Out Loud
         </button>
 
         <button
+          className="btn"
           onClick={startListening}
-          style={{ padding: "8px 16px", marginRight: 10 }}
         >
           Start/Resume Listening
         </button>
 
         <button
+          className="btn btn-quiet"
           onClick={stopListening}
           disabled={!listening}
-          style={{ padding: "8px 16px" }}
         >
           Stop Listening
         </button>
       </div>
 
-      <p style={{ marginTop: 4, fontStyle: "italic" }}>Status: {status}</p>
+      <p className="status-line">Status: {status}</p>
 
-      <div style={{ marginTop: 16 }}>
-        <label style={{ display: "block", marginBottom: 8, fontWeight: "bold" }}>
-          Recognized Answer:
-        </label>
+      <div className="answer-block">
+        <label>Recognized Answer:</label>
         <textarea
+          className="answer-textarea"
           value={currentAnswer}
           onChange={handleAnswerChange}
-          style={{ width: "100%", minHeight: 120, padding: 8 }}
         />
       </div>
 
-      <div style={{ marginTop: 20, display: "flex", gap: 8 }}>
+      <div className="nav-row">
         <button
+          className="btn btn-quiet"
           onClick={goToPrev}
           disabled={currentIndex === 0}
-          style={{ padding: "8px 16px" }}
         >
           Previous Question
         </button>
 
         <button
+          className="btn"
           onClick={goToNext}
           disabled={finished}
-          style={{ padding: "8px 16px" }}
         >
           Next Question
         </button>
       </div>
 
-      <div style={{ marginTop: 32 }}>
+      <div className="qa-list">
         <h2>All Questions & Answers</h2>
-        <ul>
-          {QUESTIONS.map((q, i) => (
-            <li key={i} style={{ marginBottom: 12 }}>
-              <div style={{ fontWeight: "bold" }}>Q{i + 1}: {q}</div>
-              <div>A{i + 1}: {answers[i] || <span style={{ opacity: 0.6 }}>No answer yet</span>}</div>
-            </li>
-          ))}
-        </ul>
+        {QUESTIONS.map((q, i) => (
+          <div key={i} className="qa-item">
+            <div className="question">Q{i + 1}: {q}</div>
+            <div className="answer">
+              {answers[i] ? (
+                <>{answers[i]}</>
+              ) : (
+                <span className="placeholder">No answer yet</span>
+              )}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
