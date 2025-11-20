@@ -171,17 +171,17 @@ const VoiceInterview: React.FC = () => {
     const handleError = () => {
       audio.removeEventListener("ended", handleEnded);
       audio.removeEventListener("error", handleError);
-      setStatus("Unable to play recorded question.");
+      setStatus("Unable to ask question.");
     };
 
     audio.addEventListener("ended", handleEnded);
     audio.addEventListener("error", handleError);
 
-    setStatus("Playing recorded question…");
+    setStatus("Asking question…");
     audio
       .play()
       .catch(err => {
-        console.error("Unable to play audio question", err);
+        console.error("Unable to ask question", err);
         audio.removeEventListener("ended", handleEnded);
         audio.removeEventListener("error", handleError);
         setStatus("Playback failed. Check that the MP3 file exists.");
