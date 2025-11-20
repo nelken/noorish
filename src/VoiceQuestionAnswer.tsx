@@ -9,7 +9,16 @@ const QUESTIONS: string[] = [
   "When you're with colleagues or clients, what's your general attitude lately? More open and collaborative, going through the motions, or withdrawn and impatient?",
   "When challenges come up at work, how confident are you in handling them?",
   "Looking at what you've accomplished at work recently, how do you feel about your ability to make a difference?"
+];
 
+// Update these paths to point to your prerecorded MP3 assets
+const QUESTION_AUDIO_SOURCES: (string | null)[] = [
+  "./audio/question-1.mp3",
+  "/audio/question-2.mp3",
+  "/audio/question-3.mp3",
+  "/audio/question-4.mp3",
+  "/audio/question-5.mp3",
+  "/audio/question-6.mp3"
 ];
 
 const VoiceInterview: React.FC = () => {
@@ -24,6 +33,7 @@ const VoiceInterview: React.FC = () => {
   const currentIndexRef = useRef<number>(0); // keep in sync with currentIndex for callbacks
   const shouldListenRef = useRef<boolean>(false);
   const isRecognizingRef = useRef<boolean>(false);
+  const questionAudioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     currentIndexRef.current = currentIndex;
@@ -96,6 +106,16 @@ const VoiceInterview: React.FC = () => {
     };
   }, []);
 
+  useEffect(() => {
+    const audioElement = new Audio();
+    questionAudioRef.current = audioElement;
+
+    return () => {
+      audioElement.pause();
+      questionAudioRef.current = null;
+    };
+  }, []);
+
   const startListening = () => {
     if (!recognitionRef.current) return;
     if (isRecognizingRef.current) {
@@ -117,32 +137,55 @@ const VoiceInterview: React.FC = () => {
   };
 
   const speakCurrentQuestion = () => {
-    const synth = window.speechSynthesis;
-    if (!synth) {
-      setStatus("Speech synthesis unsupported.");
+    const audioSrc = QUESTION_AUDIO_SOURCES[currentIndex];
+    if (!audioSrc) {
+      setStatus("No audio recording is configured for this question.");
       return;
     }
 
-    const question = QUESTIONS[currentIndex];
-    const utter = new SpeechSynthesisUtterance(question);
+    stopListening();
 
-    utter.onstart = () => {
-      // clear current answer when re-asking this question
-      setAnswers(prev => {
-        const updated = [...prev];
-        updated[currentIndex] = "";
-        return updated;
-      });
-      setStatus("Asking question…");
-    };
+    if (!questionAudioRef.current) {
+      questionAudioRef.current = new Audio();
+    }
 
-    utter.onend = () => {
+    const audio = questionAudioRef.current;
+    audio.pause();
+    audio.currentTime = 0;
+    audio.src = audioSrc;
+
+    // clear current answer when re-asking this question
+    setAnswers(prev => {
+      const updated = [...prev];
+      updated[currentIndex] = "";
+      return updated;
+    });
+
+    const handleEnded = () => {
+      audio.removeEventListener("ended", handleEnded);
+      audio.removeEventListener("error", handleError);
       setStatus("Now listening…");
       startListening();
     };
 
-    synth.cancel();
-    synth.speak(utter);
+    const handleError = () => {
+      audio.removeEventListener("ended", handleEnded);
+      audio.removeEventListener("error", handleError);
+      setStatus("Unable to play recorded question.");
+    };
+
+    audio.addEventListener("ended", handleEnded);
+    audio.addEventListener("error", handleError);
+
+    setStatus("Playing recorded question…");
+    audio
+      .play()
+      .catch(err => {
+        console.error("Unable to play audio question", err);
+        audio.removeEventListener("ended", handleEnded);
+        audio.removeEventListener("error", handleError);
+        setStatus("Playback failed. Check that the MP3 file exists.");
+      });
   };
 
   const goToNext = () => {
