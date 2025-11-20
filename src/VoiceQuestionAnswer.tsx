@@ -13,12 +13,12 @@ const QUESTIONS: string[] = [
 
 // Update these paths to point to your prerecorded MP3 assets
 const QUESTION_AUDIO_SOURCES: (string | null)[] = [
-  "./audio/question-1.mp3",
-  "/audio/question-2.mp3",
-  "/audio/question-3.mp3",
-  "/audio/question-4.mp3",
-  "/audio/question-5.mp3",
-  "/audio/question-6.mp3"
+  "./public/audio/question-1.mp3",
+  "./public/audio/question-2.mp3",
+  "./public/audio/question-3.mp3",
+  "./public/audio/question-4.mp3",
+  "./public/audio/question-5.mp3",
+  "./public/audio/question-6.mp3"
 ];
 
 const VoiceInterview: React.FC = () => {
