@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
 import "./VoiceQuestionAnswer.css";
 
 // Hardcoded questions asked one after the other
@@ -28,6 +29,7 @@ const VoiceInterview: React.FC = () => {
   );
   const [listening, setListening] = useState<boolean>(false);
   const [status, setStatus] = useState<string>("Idle");
+  const [evaluation, setEvaluation] = useState<string>("");
 
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const currentIndexRef = useRef<number>(0); // keep in sync with currentIndex for callbacks
@@ -210,6 +212,29 @@ const VoiceInterview: React.FC = () => {
 
   const finished = currentIndex === QUESTIONS.length - 1;
 
+  function combineMessages(questions: string[], answers: string[]) {
+    return questions
+    .flatMap((q, i) => [
+      `Question ${i + 1}: ${q}`,
+      `Answer ${i + 1}: ${answers[i] ?? ""}`,
+    ])
+    .join("\n\n");
+  }
+
+  async function sendAllToBackend() {
+    const combined = combineMessages(QUESTIONS, answers);
+  
+    const res = await fetch("/api/query", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ q: combined }),
+    });
+  
+    const data = await res.json();
+    console.log("Backend response", data);
+    setEvaluation(data.text ?? "");
+  }
+
   return (
     <div className="voice-shell">
       <div className="question-meta">
@@ -242,6 +267,12 @@ const VoiceInterview: React.FC = () => {
           disabled={!listening}
         >
           Stop Listening
+        </button>
+
+        <button 
+          className="send-history-btn"
+          onClick={sendAllToBackend}>
+          Get evaluation
         </button>
       </div>
 
@@ -289,6 +320,11 @@ const VoiceInterview: React.FC = () => {
           </div>
         ))}
       </div>
+      <div className="evaluation-block">
+        <h2>Evaluation</h2>
+        <ReactMarkdown>{evaluation}</ReactMarkdown>
+      </div>
+
     </div>
   );
 };

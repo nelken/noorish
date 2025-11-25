@@ -1,3 +1,36 @@
+.eval-textarea {
+  width: 100%;
+  height: 300px;
+  padding: 14px;
+  font-size: 1.1rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  resize: vertical;
+}
+
+.send-history-btn {
+  background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
+  color: #3c2a2a;
+  font-weight: 600;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 1rem;
+  box-shadow: 0 4px 10px rgba(255, 170, 170, 0.45);
+  transition: all 0.2s ease;
+}
+
+.send-history-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(255, 170, 170, 0.55);
+}
+
+.send-history-btn:active {
+  transform: translateY(1px);
+}
+
+
 .voice-shell {
   max-width: 960px;
   margin: 0 auto;
