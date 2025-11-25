@@ -30,6 +30,7 @@ const VoiceInterview: React.FC = () => {
   const [listening, setListening] = useState<boolean>(false);
   const [status, setStatus] = useState<string>("Idle");
   const [evaluation, setEvaluation] = useState<string>("");
+  const [scorePercentage, setScorePercentage] = useState<number>(0);
 
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const currentIndexRef = useRef<number>(0); // keep in sync with currentIndex for callbacks
@@ -252,7 +253,21 @@ const VoiceInterview: React.FC = () => {
   
     const data = await res.json();
     console.log("Backend response", data);
-    setEvaluation(data.text ?? "");
+
+
+    try {
+      const parsed = JSON.parse(data.text);
+      if (typeof parsed.score_percent === "number") {
+        setScorePercentage(parsed.score_percent);
+      }
+      if (typeof parsed.evaluation_markdown === "string") {
+        setEvaluation(parsed.evaluation_markdown ?? "");
+      }
+    } catch (e) {
+      console.warn("Failed to parse JSON from model, falling back to raw text", e);
+    }
+    
+    
   }
 
   return (
@@ -344,7 +359,7 @@ const VoiceInterview: React.FC = () => {
         <div className="evaluation-block">
           
             <h2>Evaluation</h2>
-            <BurnoutScale percent={82} />
+            <BurnoutScale percent={scorePercentage} />
             <ReactMarkdown>{evaluation}</ReactMarkdown>
         </div>
       )} 
