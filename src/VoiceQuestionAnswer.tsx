@@ -220,6 +220,26 @@ const VoiceInterview: React.FC = () => {
     ])
     .join("\n\n");
   }
+  function BurnoutScale({ percent }: { percent: number }) {
+    return (
+      <div className="burnout-scale">
+        <div className="labels">
+          <span>Engaged</span>
+          <span>Ineffective</span>
+          <span>Overextended</span>
+          <span>Disengaged</span>
+          <span>Burnout</span>
+        </div>
+  
+        <div className="bar">
+          <div className="marker" style={{ left: `${percent}%` }}>
+            <span className="dot"></span>
+            <span className="text">You are here</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   async function sendAllToBackend() {
     const combined = combineMessages(QUESTIONS, answers);
@@ -320,10 +340,14 @@ const VoiceInterview: React.FC = () => {
           </div>
         ))}
       </div>
-      <div className="evaluation-block">
-        <h2>Evaluation</h2>
-        <ReactMarkdown>{evaluation}</ReactMarkdown>
-      </div>
+      {evaluation && (
+        <div className="evaluation-block">
+          
+            <h2>Evaluation</h2>
+            <BurnoutScale percent={82} />
+            <ReactMarkdown>{evaluation}</ReactMarkdown>
+        </div>
+      )} 
 
     </div>
   );
