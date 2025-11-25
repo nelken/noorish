@@ -184,7 +184,7 @@ const VoiceInterview: React.FC = () => {
         console.error("Unable to ask question", err);
         audio.removeEventListener("ended", handleEnded);
         audio.removeEventListener("error", handleError);
-        setStatus("Playback failed. Check that the MP3 file exists.");
+        setStatus("asking failed.");
       });
   };
 
