@@ -12,16 +12,6 @@ const QUESTIONS: string[] = [
   "Looking at what you've accomplished at work recently, how do you feel about your ability to make a difference?"
 ];
 
-// Update these paths to point to your prerecorded MP3 assets
-const QUESTION_AUDIO_SOURCES: (string | null)[] = [
-  "./audio/question-1.mp3",
-  "./audio/question-2.mp3",
-  "./audio/question-3.mp3",
-  "./audio/question-4.mp3",
-  "./audio/question-5.mp3",
-  "./audio/question-6.mp3"
-];
-
 const VoiceInterview: React.FC = () => {
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [answers, setAnswers] = useState<string[]>(
@@ -82,6 +72,16 @@ const VoiceInterview: React.FC = () => {
 
     recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
       console.error("SpeechRecognition error:", event.error);
+      const micBlocked =
+        event.error === "not-allowed" || event.error === "service-not-allowed";
+      if (micBlocked) {
+        shouldListenRef.current = false;
+        setStatus(
+          "Microphone access denied. Please allow mic permission and press Start again."
+        );
+        recognition.stop();
+        return;
+      }
       setStatus(`Error: ${event.error}`);
     };
 
@@ -129,7 +129,11 @@ const VoiceInterview: React.FC = () => {
     try {
       recognitionRef.current?.start();
     } catch (err) {
-      console.warn("Recognition already running", err);
+      console.warn("Recognition start failed", err);
+      shouldListenRef.current = false;
+      setStatus(
+        "Microphone permission is blocked. Please allow mic access and try again."
+      );
     }
   };
 
@@ -139,13 +143,7 @@ const VoiceInterview: React.FC = () => {
     recognitionRef.current?.stop();
   };
 
-  const speakCurrentQuestion = () => {
-    const audioSrc = QUESTION_AUDIO_SOURCES[currentIndex];
-    if (!audioSrc) {
-      setStatus("No audio recording is configured for this question.");
-      return;
-    }
-
+  const speakCurrentQuestion = async () => {
     stopListening();
 
     if (!questionAudioRef.current) {
@@ -155,40 +153,77 @@ const VoiceInterview: React.FC = () => {
     const audio = questionAudioRef.current;
     audio.pause();
     audio.currentTime = 0;
-    audio.src = audioSrc;
 
-    // clear current answer when re-asking this question
-    setAnswers(prev => {
-      const updated = [...prev];
-      updated[currentIndex] = "";
-      return updated;
-    });
+    setStatus("Fetching audio…");
 
-    const handleEnded = () => {
-      audio.removeEventListener("ended", handleEnded);
-      audio.removeEventListener("error", handleError);
-      setStatus("Now listening…");
-      startListening();
-    };
+    let audioUrl: string | null = null;
 
-    const handleError = () => {
-      audio.removeEventListener("ended", handleEnded);
-      audio.removeEventListener("error", handleError);
-      setStatus("Unable to ask question.");
-    };
+    try {
+      const res = await fetch("/api/speak", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          input: currentQuestion,
+        }),
+      });
 
-    audio.addEventListener("ended", handleEnded);
-    audio.addEventListener("error", handleError);
+      if (!res.ok) {
+        throw new Error(`TTS request failed with status ${res.status}`);
+      }
 
-    setStatus("Asking question…");
-    audio
-      .play()
-      .catch(err => {
-        console.error("Unable to ask question", err);
+      const arrayBuffer = await res.arrayBuffer();
+      const blob = new Blob([arrayBuffer], { type: "audio/wav" });
+      audioUrl = URL.createObjectURL(blob);
+      audio.src = audioUrl;
+
+      // clear current answer when re-asking this question
+      setAnswers(prev => {
+        const updated = [...prev];
+        updated[currentIndex] = "";
+        return updated;
+      });
+
+      const handleEnded = () => {
         audio.removeEventListener("ended", handleEnded);
         audio.removeEventListener("error", handleError);
-        setStatus("asking failed.");
-      });
+        if (audioUrl) {
+          URL.revokeObjectURL(audioUrl);
+        }
+        setStatus("Now listening…");
+        startListening();
+      };
+
+      const handleError = () => {
+        audio.removeEventListener("ended", handleEnded);
+        audio.removeEventListener("error", handleError);
+        if (audioUrl) {
+          URL.revokeObjectURL(audioUrl);
+        }
+        setStatus("Unable to ask question.");
+      };
+
+      audio.addEventListener("ended", handleEnded);
+      audio.addEventListener("error", handleError);
+
+      setStatus("Asking question…");
+      audio
+        .play()
+        .catch(err => {
+          console.error("Unable to ask question", err);
+          audio.removeEventListener("ended", handleEnded);
+          audio.removeEventListener("error", handleError);
+          if (audioUrl) {
+            URL.revokeObjectURL(audioUrl);
+          }
+          setStatus("asking failed.");
+        });
+    } catch (err) {
+      console.error("Unable to fetch TTS audio", err);
+      if (audioUrl) {
+        URL.revokeObjectURL(audioUrl);
+      }
+      setStatus("Unable to ask question.");
+    }
   };
 
   const goToNext = () => {
