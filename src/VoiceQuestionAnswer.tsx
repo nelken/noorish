@@ -382,7 +382,7 @@ const VoiceInterview: React.FC = () => {
       <p className="status-line">
         {hasCurrentAnswer
           ? finished
-            ? "All questions answered. Submit to get your evaluation."
+            ? "Okay, I've got what I need. Submit to get your evaluation. Let me put together your burnout assessment—I'll have it ready for you in just a moment. "
             : "You can move to the next question."
           : "Answer this question to continue."}
       </p>
