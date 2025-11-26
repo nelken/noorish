@@ -192,6 +192,8 @@ const VoiceInterview: React.FC = () => {
   };
 
   const goToNext = () => {
+    // Only advance when the current question has an answer
+    if (!hasCurrentAnswer) return;
     setCurrentIndex(prev => Math.min(prev + 1, QUESTIONS.length - 1));
   };
 
@@ -201,6 +203,10 @@ const VoiceInterview: React.FC = () => {
 
   const currentQuestion = QUESTIONS[currentIndex];
   const currentAnswer = answers[currentIndex] ?? "";
+  const hasCurrentAnswer = currentAnswer.trim().length > 0;
+  const allAnswered = answers.every(ans => ans.trim().length > 0);
+  const finished = currentIndex === QUESTIONS.length - 1;
+  const canSubmit = finished && allAnswered;
 
   const handleAnswerChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
@@ -210,8 +216,6 @@ const VoiceInterview: React.FC = () => {
       return updated;
     });
   };
-
-  const finished = currentIndex === QUESTIONS.length - 1;
 
   function combineMessages(questions: string[], answers: string[]) {
     return questions
@@ -306,8 +310,9 @@ const VoiceInterview: React.FC = () => {
 
         <button 
           className="send-history-btn"
-          onClick={sendAllToBackend}>
-          Get evaluation
+          onClick={sendAllToBackend}
+          disabled={!canSubmit}>
+          Submit all answers for evaluation
         </button>
       </div>
 
@@ -334,27 +339,19 @@ const VoiceInterview: React.FC = () => {
         <button
           className="btn"
           onClick={goToNext}
-          disabled={finished}
+          disabled={finished || !hasCurrentAnswer}
         >
           Next Question
         </button>
       </div>
+      <p className="status-line">
+        {hasCurrentAnswer
+          ? finished
+            ? "All questions answered. Submit to get your evaluation."
+            : "You can move to the next question."
+          : "Answer this question to continue."}
+      </p>
 
-      <div className="qa-list">
-        <h2>All Questions & Answers</h2>
-        {QUESTIONS.map((q, i) => (
-          <div key={i} className="qa-item">
-            <div className="question">Q{i + 1}: {q}</div>
-            <div className="answer">
-              {answers[i] ? (
-                <>{answers[i]}</>
-              ) : (
-                <span className="placeholder">No answer yet</span>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
       {evaluation && (
         <div className="evaluation-block">
           
