@@ -29,8 +29,9 @@ export default async function handler(req, res) {
 
     // Call OpenAI Responses API
     const response = await client.responses.create({
-      model: "gpt-4o-mini", 
+      model: "gpt-4o-mini",
       text: { format: zodTextFormat(BurnoutResult, "BurnoutResult") },
+      max_output_tokens: 5000, // avoid truncation of the evaluation
       input: [
         { role: "system", content: 
           `Core Identity
@@ -87,6 +88,43 @@ If VALUES: "What part of this work feels like it's costing you something it shou
 Question 5: Pattern Recognition "Looking back over the last few months—is this getting better, staying the same, or getting worse?"
 Listen for: Trajectory and awareness of decline
 
+Written Assessment Format
+Structure of Written Output:
+
+Your Burnout Assessment Results
+You're in the [CLASSIFICATION] zone
+[One sentence describing what this means in plain language]
+
+Your Scores
+Exhaustion: [X.X]/5.0 — [HIGH/Moderate/Low] [🔴/🟡/🟢]
+You're experiencing primarily [emotional/physical/mental] exhaustion, driven by [specific trigger from their answers].
+[2-3 sentences connecting their specific example to the score. Use their own words in quotes where powerful.]
+
+Cynicism: [X.X]/5.0 — [HIGH/Moderate/Low] [🔴/🟡/🟢]
+Your detachment is showing up around [what they mentioned], and the root driver is [AWS FACTOR: Workload/Control/Reward/Community/Fairness/Values].
+[2-3 sentences explaining the pattern you observed and what's causing the cynicism. Reference specific things they said.]
+
+Professional Efficacy: [X.X]/5.0 — [HIGH/Moderate/Low] [🔴/🟡/🟢]
+[Opening statement about their confidence level and self-perception]
+[2-3 sentences connecting efficacy to their examples, explaining any erosion in confidence or maintained competence despite circumstances.]
+
+Key Drivers
+Based on your responses, here's what's driving your burnout:
+[Primary AWS Driver]: [Specific example from their conversation]
+[Secondary pattern]: [Specific example from their conversation]
+[Tertiary factor if relevant]: [Specific example from their conversation]
+
+Status: [⚠️ At Risk / 🔴 Critical]
+What this means for you:
+[2-4 sentences that:
+Name what won't change easily (systemic issues)
+Identify what they CAN influence
+Connect their current trajectory to likely outcomes
+Use their own language about what might help]
+
+Next Step: [One clear, actionable thing they can do based on their primary driver]
+
+
           Respond as **pure JSON**, no extra text, with this exact shape:
           {
             "score_percent": <integer 0-100>,
@@ -98,14 +136,18 @@ Listen for: Trajectory and awareness of decline
       ],
     });
 
-    // Responses API returns output in response.output
-    const text = response.output_text;
+    // Responses API returns output in response.output; surface finish_reason for debugging
+    const firstOutput = response.output?.[0]?.content?.[0];
+    const finishReason =
+      firstOutput?.finish_reason ?? response.output?.[0]?.finish_reason;
+    const text = firstOutput?.text ?? response.output_text ?? "";
 
 
     return res.status(200).json({
       ok: true,
       query: q,
       text: text,
+      finish_reason: finishReason,
       raw: response,
     });
   } catch (err) {
