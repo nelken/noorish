@@ -385,8 +385,6 @@ const VoiceInterview: React.FC = () => {
         </button>
       </div>
 
-      <p className="status-line">Status: {status}</p>
-
       <div className="answer-block">
         <label>Recognized Answer:</label>
         <textarea
