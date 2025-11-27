@@ -2,20 +2,57 @@ import React, { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import "./VoiceQuestionAnswer.css";
 
+type Question = { id: number; value: string; children: [] };
+
 // Hardcoded questions asked one after the other
-const QUESTIONS: string[] = [
-  "In a typical work week, how many days do you feel completely used up by the end of the day?",
-  "When you finish work, how long does it take you to feel like yourself again?",
-  "When you think about your work itself — the purpose behind what you do — how do you feel about it these days?",
-  "When you're with colleagues or clients, what's your general attitude lately? More open and collaborative, going through the motions, or withdrawn and impatient?",
-  "When challenges come up at work, how confident are you in handling them?",
-  "Looking at what you've accomplished at work recently, how do you feel about your ability to make a difference?"
-];
+const QUESTIONS: Record<number, Question> = {
+  1: {
+    id: 1,
+    value:
+      "In a typical work week, how many days do you feel completely used up by the end of the day?",
+    children: [],
+  },
+  2: {
+    id: 2,
+    value:
+      "When you finish work, how long does it take you to feel like yourself again?",
+    children: [],
+  },
+  3: {
+    id: 3,
+    value:
+      "When you think about your work itself — the purpose behind what you do — how do you feel about it these days?",
+    children: [],
+  },
+  4: {
+    id: 4,
+    value:
+      "When you're with colleagues or clients, what's your general attitude lately? More open and collaborative, going through the motions, or withdrawn and impatient?",
+    children: [],
+  },
+  5: {
+    id: 5,
+    value:
+      "When challenges come up at work, how confident are you in handling them?",
+    children: [],
+  },
+  6: {
+    id: 6,
+    value:
+      "Looking at what you've accomplished at work recently, how do you feel about your ability to make a difference?",
+    children: [],
+  },
+};
+
+const QUESTION_IDS = Object.keys(QUESTIONS)
+  .map(Number)
+  .sort((a, b) => a - b);
+const TOTAL_QUESTIONS = QUESTION_IDS.length;
 
 const VoiceInterview: React.FC = () => {
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [answers, setAnswers] = useState<string[]>(
-    () => Array(QUESTIONS.length).fill("")
+    () => Array(TOTAL_QUESTIONS).fill("")
   );
   const [listening, setListening] = useState<boolean>(false);
   const [status, setStatus] = useState<string>("Idle");
@@ -163,7 +200,7 @@ const VoiceInterview: React.FC = () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          input: currentQuestion,
+          input: currentQuestion.value,
         }),
       });
 
@@ -229,18 +266,19 @@ const VoiceInterview: React.FC = () => {
   const goToNext = () => {
     // Only advance when the current question has an answer
     if (!hasCurrentAnswer) return;
-    setCurrentIndex(prev => Math.min(prev + 1, QUESTIONS.length - 1));
+    setCurrentIndex(prev => Math.min(prev + 1, TOTAL_QUESTIONS - 1));
   };
 
   const goToPrev = () => {
     setCurrentIndex(prev => Math.max(prev - 1, 0));
   };
 
-  const currentQuestion = QUESTIONS[currentIndex];
+  const currentQuestionId = QUESTION_IDS[currentIndex]!;
+  const currentQuestion = QUESTIONS[currentQuestionId]!;
   const currentAnswer = answers[currentIndex] ?? "";
   const hasCurrentAnswer = currentAnswer.trim().length > 0;
   const allAnswered = answers.every(ans => ans.trim().length > 0);
-  const finished = currentIndex === QUESTIONS.length - 1;
+  const finished = currentIndex === TOTAL_QUESTIONS - 1;
   const canSubmit = finished && allAnswered;
 
   const handleAnswerChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -252,13 +290,13 @@ const VoiceInterview: React.FC = () => {
     });
   };
 
-  function combineMessages(questions: string[], answers: string[]) {
-    return questions
-    .flatMap((q, i) => [
-      `Question ${i + 1}: ${q}`,
-      `Answer ${i + 1}: ${answers[i] ?? ""}`,
-    ])
-    .join("\n\n");
+  function combineMessages(questionOrder: number[], answerList: string[]) {
+    return questionOrder
+      .flatMap((id, i) => [
+        `Question ${id}: ${QUESTIONS[id].value}`,
+        `Answer ${id}: ${answerList[i] ?? ""}`,
+      ])
+      .join("\n\n");
   }
   function BurnoutScale({ percent }: { percent: number }) {
     return (
@@ -282,7 +320,7 @@ const VoiceInterview: React.FC = () => {
   }
 
   async function sendAllToBackend() {
-    const combined = combineMessages(QUESTIONS, answers);
+    const combined = combineMessages(QUESTION_IDS, answers);
   
     const res = await fetch("/api/query", {
       method: "POST",
@@ -312,13 +350,13 @@ const VoiceInterview: React.FC = () => {
   return (
     <div className="voice-shell">
       <div className="question-meta">
-        <span>Question {currentIndex + 1} of {QUESTIONS.length}</span>
+        <span>Question {currentQuestionId} of {TOTAL_QUESTIONS}</span>
         <span className="status-pill">{status}</span>
       </div>
 
       <h1>Burnout Assessment</h1>
 
-      <p className="question-text">{currentQuestion}</p>
+      <p className="question-text">{currentQuestion.value}</p>
 
       <div className="control-row">
         <button
