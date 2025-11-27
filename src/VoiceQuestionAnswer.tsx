@@ -269,10 +269,6 @@ const VoiceInterview: React.FC = () => {
     setCurrentIndex(prev => Math.min(prev + 1, TOTAL_QUESTIONS - 1));
   };
 
-  const goToPrev = () => {
-    setCurrentIndex(prev => Math.max(prev - 1, 0));
-  };
-
   const currentQuestionId = QUESTION_IDS[currentIndex]!;
   const currentQuestion = QUESTIONS[currentQuestionId]!;
   const currentAnswer = answers[currentIndex] ?? "";
@@ -401,14 +397,6 @@ const VoiceInterview: React.FC = () => {
       </div>
 
       <div className="nav-row">
-        <button
-          className="btn btn-quiet"
-          onClick={goToPrev}
-          disabled={currentIndex === 0}
-        >
-          Previous Question
-        </button>
-
         <button
           className="btn"
           onClick={goToNext}
