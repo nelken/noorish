@@ -2,15 +2,24 @@ import React, { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import "./VoiceQuestionAnswer.css";
 
-type Question = { id: number; value: string; children: [] };
+type Question = { id: number; value: string; children: string[] };
+type QuestionItem = {
+  id: string;
+  value: string;
+  isFollowUp: boolean;
+  parentId?: number;
+  followUpIndex?: number;
+  totalFollowUpsForParent?: number;
+  rootNumber: number;
+};
 
 // Hardcoded questions asked one after the other
 const QUESTIONS: Record<number, Question> = {
   1: {
     id: 1,
     value:
-      "In a typical work week, how many days do you feel completely used up by the end of the day?",
-    children: [],
+      "Tell me about the last time you felt completely wiped out. What was happening that day?",
+    children: ["During a typical week, how many days do you feel that way?"],
   },
   2: {
     id: 2,
@@ -44,10 +53,35 @@ const QUESTIONS: Record<number, Question> = {
   },
 };
 
-const QUESTION_IDS = Object.keys(QUESTIONS)
+const ROOT_IDS = Object.keys(QUESTIONS)
   .map(Number)
   .sort((a, b) => a - b);
-const TOTAL_QUESTIONS = QUESTION_IDS.length;
+
+const QUESTION_SEQUENCE: QuestionItem[] = ROOT_IDS.flatMap((questionId, rootIndex) => {
+  const q = QUESTIONS[questionId];
+  if (!q) return [];
+  const rootNumber = rootIndex + 1;
+  const followUps = q.children.map((childText, idx) => ({
+    id: `${q.id}-${idx + 1}`,
+    value: childText,
+    isFollowUp: true,
+    parentId: q.id,
+    followUpIndex: idx + 1,
+    totalFollowUpsForParent: q.children.length,
+    rootNumber,
+  }));
+  return [
+    {
+      id: q.id.toString(),
+      value: q.value,
+      isFollowUp: false,
+      rootNumber,
+    },
+    ...followUps,
+  ];
+});
+const TOTAL_QUESTIONS = QUESTION_SEQUENCE.length;
+const ROOT_COUNT = ROOT_IDS.length;
 
 const VoiceInterview: React.FC = () => {
   const [currentIndex, setCurrentIndex] = useState<number>(0);
@@ -269,8 +303,7 @@ const VoiceInterview: React.FC = () => {
     setCurrentIndex(prev => Math.min(prev + 1, TOTAL_QUESTIONS - 1));
   };
 
-  const currentQuestionId = QUESTION_IDS[currentIndex]!;
-  const currentQuestion = QUESTIONS[currentQuestionId]!;
+  const currentQuestion = QUESTION_SEQUENCE[currentIndex]!;
   const currentAnswer = answers[currentIndex] ?? "";
   const hasCurrentAnswer = currentAnswer.trim().length > 0;
   const allAnswered = answers.every(ans => ans.trim().length > 0);
@@ -286,11 +319,22 @@ const VoiceInterview: React.FC = () => {
     });
   };
 
-  function combineMessages(questionOrder: number[], answerList: string[]) {
+  function labelForQuestion(q: QuestionItem, index: number) {
+    if (q.isFollowUp) {
+      const followUpNumber = q.followUpIndex ?? index + 1;
+      const total = q.totalFollowUpsForParent
+        ? ` of ${q.totalFollowUpsForParent}`
+        : "";
+      return `Follow-up ${followUpNumber}${total} to Question ${q.rootNumber}`;
+    }
+    return `Question ${q.rootNumber}`;
+  }
+
+  function combineMessages(questionOrder: QuestionItem[], answerList: string[]) {
     return questionOrder
-      .flatMap((id, i) => [
-        `Question ${id}: ${QUESTIONS[id].value}`,
-        `Answer ${id}: ${answerList[i] ?? ""}`,
+      .flatMap((q, i) => [
+        `${labelForQuestion(q, i)}: ${q.value}`,
+        `Answer ${i + 1}: ${answerList[i] ?? ""}`,
       ])
       .join("\n\n");
   }
@@ -316,7 +360,7 @@ const VoiceInterview: React.FC = () => {
   }
 
   async function sendAllToBackend() {
-    const combined = combineMessages(QUESTION_IDS, answers);
+    const combined = combineMessages(QUESTION_SEQUENCE, answers);
   
     const res = await fetch("/api/query", {
       method: "POST",
@@ -346,7 +390,15 @@ const VoiceInterview: React.FC = () => {
   return (
     <div className="voice-shell">
       <div className="question-meta">
-        <span>Question {currentQuestionId} of {TOTAL_QUESTIONS}</span>
+        <span>
+          {currentQuestion.isFollowUp
+            ? `Follow-up ${currentQuestion.followUpIndex ?? currentIndex + 1}${
+                currentQuestion.totalFollowUpsForParent
+                  ? ` of ${currentQuestion.totalFollowUpsForParent}`
+                  : ""
+              } to Question ${currentQuestion.rootNumber}`
+            : `Question ${currentQuestion.rootNumber} of ${ROOT_COUNT}`}
+        </span>
         <span className="status-pill">{status}</span>
       </div>
 
