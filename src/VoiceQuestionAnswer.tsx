@@ -243,7 +243,7 @@ const VoiceInterview: React.FC = () => {
       }
 
       const arrayBuffer = await res.arrayBuffer();
-      const blob = new Blob([arrayBuffer], { type: "audio/wav" });
+      const blob = new Blob([arrayBuffer], { type: "audio/mpeg" });
       audioUrl = URL.createObjectURL(blob);
       audio.src = audioUrl;
 
