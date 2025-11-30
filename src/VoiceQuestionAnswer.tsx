@@ -88,7 +88,6 @@ const VoiceInterview: React.FC = () => {
   const [answers, setAnswers] = useState<string[]>(
     () => Array(TOTAL_QUESTIONS).fill("")
   );
-  const [listening, setListening] = useState<boolean>(false);
   const [status, setStatus] = useState<string>("Idle");
   const [evaluation, setEvaluation] = useState<string>("");
   const [scorePercentage, setScorePercentage] = useState<number>(0);
@@ -122,13 +121,11 @@ const VoiceInterview: React.FC = () => {
     recognition.continuous = true;      // keep streaming until stopped
 
     recognition.onstart = () => {
-      setListening(true);
       setStatus("Listening…");
       isRecognizingRef.current = true;
     };
 
     recognition.onend = () => {
-      setListening(false);
       isRecognizingRef.current = false;
       if (shouldListenRef.current) {
         setStatus("Waiting for more speech…");
