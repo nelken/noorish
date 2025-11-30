@@ -88,6 +88,7 @@ const VoiceInterview: React.FC = () => {
   const [answers, setAnswers] = useState<string[]>(
     () => Array(TOTAL_QUESTIONS).fill("")
   );
+  const [started, setStarted] = useState<boolean>(false);
   const [status, setStatus] = useState<string>("Idle");
   const [evaluation, setEvaluation] = useState<string>("");
   const [scorePercentage, setScorePercentage] = useState<number>(0);
@@ -226,11 +227,11 @@ const VoiceInterview: React.FC = () => {
 
   useEffect(() => {
     // Automatically ask the current question when it becomes active,
-    // but only after audio playback has been unlocked by a user gesture.
-    if (!audioUnlocked) return;
+    // but only after audio playback has been unlocked by a user gesture and the flow has started.
+    if (!audioUnlocked || !started) return;
     speakCurrentQuestion();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentIndex, audioUnlocked]);
+  }, [currentIndex, audioUnlocked, started]);
 
   const handleAskAndListen = () => {
     // First user tap unlocks audio, subsequent taps re-ask immediately.
@@ -239,6 +240,13 @@ const VoiceInterview: React.FC = () => {
       return;
     }
     speakCurrentQuestion();
+  };
+
+  const handleBegin = () => {
+    if (!audioUnlocked) {
+      setAudioUnlocked(true);
+    }
+    setStarted(true);
   };
 
   const speakCurrentQuestion = async () => {
@@ -419,80 +427,91 @@ const VoiceInterview: React.FC = () => {
 
   return (
     <div className="voice-shell">
-      <div className="question-meta">
-        <span>
-          {currentQuestion.isFollowUp
-            ? `Follow-up ${currentQuestion.followUpIndex ?? currentIndex + 1}${
-                currentQuestion.totalFollowUpsForParent
-                  ? ` of ${currentQuestion.totalFollowUpsForParent}`
-                  : ""
-              } to Question ${currentQuestion.rootNumber}`
-            : `Question ${currentQuestion.rootNumber} of ${ROOT_COUNT}`}
-        </span>
-        <span className="status-pill">{status}</span>
-      </div>
-
-      <h1>Noorish Burnout Assessment</h1>
-
-      <p className="question-text">{currentQuestion.value}</p>
-
-      <div className="control-row">
-        <button
-          className="btn"
-          onClick={handleAskAndListen}
-        >
-          Start/Resume Listening
-        </button>
-      </div>
-
-      <div className="answer-block">
-        <label>Answer:</label>
-        <textarea
-          className="answer-textarea"
-          value={currentAnswer}
-          onChange={handleAnswerChange}
-        />
-      </div>
-
-      {!finished && (
-        <div className="nav-row">
-          <button
-            className="btn"
-            onClick={goToNext}
-            disabled={!hasCurrentAnswer}
-          >
-            Next Question
+      {!started ? (
+        <div className="intro-screen">
+          <h1>Welcome to Noorish</h1>
+          <p>Press the button to begin your burnout assessment.</p>
+          <button className="btn btn-primary" onClick={handleBegin}>
+            Begin Assessment
           </button>
         </div>
+      ) : (
+        <>
+          <div className="question-meta">
+            <span>
+              {currentQuestion.isFollowUp
+                ? `Follow-up ${currentQuestion.followUpIndex ?? currentIndex + 1}${
+                    currentQuestion.totalFollowUpsForParent
+                      ? ` of ${currentQuestion.totalFollowUpsForParent}`
+                      : ""
+                  } to Question ${currentQuestion.rootNumber}`
+                : `Question ${currentQuestion.rootNumber} of ${ROOT_COUNT}`}
+            </span>
+            <span className="status-pill">{status}</span>
+          </div>
+
+          <h1>Noorish Burnout Assessment</h1>
+
+          <p className="question-text">{currentQuestion.value}</p>
+
+          <div className="control-row">
+            <button
+              className="btn"
+              onClick={handleAskAndListen}
+            >
+              Start/Resume Listening
+            </button>
+          </div>
+
+          <div className="answer-block">
+            <label>Answer:</label>
+            <textarea
+              className="answer-textarea"
+              value={currentAnswer}
+              onChange={handleAnswerChange}
+            />
+          </div>
+
+          {!finished && (
+            <div className="nav-row">
+              <button
+                className="btn"
+                onClick={goToNext}
+                disabled={!hasCurrentAnswer}
+              >
+                Next Question
+              </button>
+            </div>
+          )}
+          <p className="status-line">
+            {hasCurrentAnswer
+              ? finished
+                ? "Okay, I've got what I need. Submit to get your Assessment. Let me put together your burnout assessment—I'll have it ready for you in just a moment. "
+                : "You can move to the next question."
+              : "Answer this question to continue."}
+          </p>
+
+          {canSubmit && (
+            <div className="control-row">
+              <button 
+                className="send-history-btn"
+                onClick={sendAllToBackend}
+                disabled={!canSubmit}>
+                Submit all answers for evaluation
+              </button>
+            </div>
+          )}
+
+          {evaluation && (
+            <div className="evaluation-block">
+              
+                <h2>Evaluation</h2>
+                <BurnoutScale percent={scorePercentage} />
+                <ReactMarkdown>{evaluation}</ReactMarkdown>
+            </div>
+          )} 
+        </>
       )}
-      <p className="status-line">
-        {hasCurrentAnswer
-          ? finished
-            ? "Okay, I've got what I need. Submit to get your Assessment. Let me put together your burnout assessment—I'll have it ready for you in just a moment. "
-            : "You can move to the next question."
-          : "Answer this question to continue."}
-      </p>
-
-      {canSubmit && (
-        <div className="control-row">
-          <button 
-            className="send-history-btn"
-            onClick={sendAllToBackend}
-            disabled={!canSubmit}>
-            Submit all answers for evaluation
-          </button>
-        </div>
-      )}
-
-      {evaluation && (
-        <div className="evaluation-block">
-          
-            <h2>Evaluation</h2>
-            <BurnoutScale percent={scorePercentage} />
-            <ReactMarkdown>{evaluation}</ReactMarkdown>
-        </div>
-      )} 
-
     </div>
   );
 };
