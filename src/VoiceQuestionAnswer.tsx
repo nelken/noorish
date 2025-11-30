@@ -94,6 +94,7 @@ const VoiceInterview: React.FC = () => {
   const [showContactForm, setShowContactForm] = useState<boolean>(false);
   const [contactEmail, setContactEmail] = useState<string>("");
   const [contactPhone, setContactPhone] = useState<string>("");
+  const [contactError, setContactError] = useState<string>("");
   const [evaluation, setEvaluation] = useState<string>("");
   const [scorePercentage, setScorePercentage] = useState<number>(0);
   const [audioUnlocked, setAudioUnlocked] = useState<boolean>(false);
@@ -193,6 +194,18 @@ const VoiceInterview: React.FC = () => {
     };
   }, []);
 
+  async function submitContact(email: string, phone?: string) {
+    const res = await fetch('/api/subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, phone }),
+    })
+  
+    if (!res.ok) {
+      console.log("error", res);
+    }
+  }
+
   const startListening = () => {
     if (!recognitionRef.current) return;
     if (isRecognizingRef.current) {
@@ -252,6 +265,22 @@ const VoiceInterview: React.FC = () => {
     }
     setStarted(true);
   };
+
+  async function submitContact() {
+    if (!contactEmail && !contactPhone) return;
+    try {
+      await fetch("/api/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: contactEmail || null,
+          phone: contactPhone || null,
+        }),
+      });
+    } catch (err) {
+      console.warn("Contact submission failed", err);
+    }
+  }
 
   const speakCurrentQuestion = async () => {
     stopListening();
@@ -526,7 +555,10 @@ const VoiceInterview: React.FC = () => {
                           <input
                             type="email"
                             value={contactEmail}
-                            onChange={e => setContactEmail(e.target.value)}
+                            onChange={e => {
+                              setContactEmail(e.target.value);
+                              setContactError("");
+                            }}
                             placeholder="you@example.com"
                           />
                         </label>
@@ -540,26 +572,25 @@ const VoiceInterview: React.FC = () => {
                           />
                         </label>
                       </div>
+                      {contactError && (
+                        <p className="contact-error">{contactError}</p>
+                      )}
                       <div className="contact-actions">
                         <button
                           className="btn btn-primary"
-                          onClick={() => {
+                          onClick={async () => {
+                            if (!contactEmail.trim()) {
+                              setContactError("Email is required to continue.");
+                              return;
+                            }
+                            setContactError("");
                             setShowContactForm(false);
-                            sendAllToBackend();
+                            await submitContact();
+                            await sendAllToBackend();
                           }}
                           disabled={submitting}
                         >
                           Continue to your report
-                        </button>
-                        <button
-                          className="btn btn-quiet"
-                          onClick={() => {
-                            setShowContactForm(false);
-                            sendAllToBackend();
-                          }}
-                          disabled={submitting}
-                        >
-                          Skip and continue
                         </button>
                       </div>
                     </div>

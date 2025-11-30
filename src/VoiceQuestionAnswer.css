@@ -256,6 +256,12 @@
   flex-wrap: wrap;
 }
 
+.contact-error {
+  color: #b91c1c;
+  font-weight: 600;
+  margin: 2px 0 8px;
+}
+
 .status-line {
   margin: 6px 0 16px;
   font-style: italic;
