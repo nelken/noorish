@@ -149,6 +149,12 @@ const VoiceInterview: React.FC = () => {
       console.error("SpeechRecognition error:", event.error);
       const micBlocked =
         event.error === "not-allowed" || event.error === "service-not-allowed";
+      if (event.error === "network") {
+        shouldListenRef.current = false;
+        recognition.stop();
+        setStatus("Speech recognition network error. Check your connection and try again.");
+        return;
+      }
       if (micBlocked) {
         shouldListenRef.current = false;
         setStatus(

@@ -9,12 +9,22 @@ const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-const CACHE_DIR = path.join(process.cwd(), "api", "tts-cache");
+const CACHE_DIR = path.join(process.env.TMPDIR || "/tmp", "tts-cache");
+const isWritable =
+  (() => {
+    try {
+      fs.accessSync(process.env.TMPDIR || "/tmp", fs.constants.W_OK);
+      return true;
+    } catch {
+      return false;
+    }
+  })();
 
 function ensureCacheDir() {
-  if (!fs.existsSync(CACHE_DIR)) {
-    fs.mkdirSync(CACHE_DIR, { recursive: true });
-  }
+    if (!isWritable) return;
+    if (!fs.existsSync(CACHE_DIR)) {
+      fs.mkdirSync(CACHE_DIR, { recursive: true });
+    }
 }
 
 function buildCachePath(input, voice, instructions) {
@@ -41,7 +51,7 @@ export default async function handler(req, res) {
     ensureCacheDir();
     const cachePath = buildCachePath(input, voice, instructions);
 
-    if (fs.existsSync(cachePath)) {
+    if (isWritable && fs.existsSync(cachePath)) {
       console.log("Serving audio from cache");
       const cachedAudio = fs.readFileSync(cachePath);
       res.setHeader("Content-Type", "audio/mpeg");
@@ -60,7 +70,9 @@ export default async function handler(req, res) {
 
     const audioBuffer = Buffer.from(await response.arrayBuffer());
 
-    fs.writeFileSync(cachePath, audioBuffer);
+    if (isWritable) {
+      fs.writeFileSync(cachePath, audioBuffer);
+    }
 
     res.setHeader("Content-Type", "audio/mpeg");
     res.setHeader("Content-Length", audioBuffer.length);
