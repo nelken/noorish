@@ -437,79 +437,80 @@ const VoiceInterview: React.FC = () => {
         </div>
       ) : (
         <>
-          <div className="question-meta">
-            <span>
-              {currentQuestion.isFollowUp
-                ? `Follow-up ${currentQuestion.followUpIndex ?? currentIndex + 1}${
-                    currentQuestion.totalFollowUpsForParent
-                      ? ` of ${currentQuestion.totalFollowUpsForParent}`
-                      : ""
-                  } to Question ${currentQuestion.rootNumber}`
-                : `Question ${currentQuestion.rootNumber} of ${ROOT_COUNT}`}
-            </span>
-            <span className="status-pill">{status}</span>
-          </div>
-
-          <h1>Noorish Burnout Assessment</h1>
-
-          <p className="question-text">{currentQuestion.value}</p>
-
-          <div className="control-row">
-            <button
-              className="btn"
-              onClick={handleAskAndListen}
-            >
-              Start/Resume Listening
-            </button>
-          </div>
-
-          <div className="answer-block">
-            <label>Answer:</label>
-            <textarea
-              className="answer-textarea"
-              value={currentAnswer}
-              onChange={handleAnswerChange}
-            />
-          </div>
-
-          {!finished && (
-            <div className="nav-row">
-              <button
-                className="btn"
-                onClick={goToNext}
-                disabled={!hasCurrentAnswer}
-              >
-                Next Question
-              </button>
-            </div>
-          )}
-          <p className="status-line">
-            {hasCurrentAnswer
-              ? finished
-                ? "Okay, I've got what I need. Submit to get your Assessment. Let me put together your burnout assessment—I'll have it ready for you in just a moment. "
-                : "You can move to the next question."
-              : "Answer this question to continue."}
-          </p>
-
-          {canSubmit && (
-            <div className="control-row">
-              <button 
-                className="send-history-btn"
-                onClick={sendAllToBackend}
-                disabled={!canSubmit}>
-                Submit all answers for evaluation
-              </button>
-            </div>
-          )}
-
-          {evaluation && (
+          {evaluation ? (
             <div className="evaluation-block">
-              
-                <h2>Evaluation</h2>
-                <BurnoutScale percent={scorePercentage} />
-                <ReactMarkdown>{evaluation}</ReactMarkdown>
+              <h2>Evaluation</h2>
+              <BurnoutScale percent={scorePercentage} />
+              <ReactMarkdown>{evaluation}</ReactMarkdown>
             </div>
-          )} 
+          ) : (
+            <>
+              <div className="question-meta">
+                <span>
+                  {currentQuestion.isFollowUp
+                    ? `Follow-up ${currentQuestion.followUpIndex ?? currentIndex + 1}${
+                        currentQuestion.totalFollowUpsForParent
+                          ? ` of ${currentQuestion.totalFollowUpsForParent}`
+                          : ""
+                      } to Question ${currentQuestion.rootNumber}`
+                    : `Question ${currentQuestion.rootNumber} of ${ROOT_COUNT}`}
+                </span>
+                <span className="status-pill">{status}</span>
+              </div>
+
+              <h1>Noorish Burnout Assessment</h1>
+
+              <p className="question-text">{currentQuestion.value}</p>
+
+              <div className="control-row">
+                <button
+                  className="btn"
+                  onClick={handleAskAndListen}
+                >
+                  Start/Resume Listening
+                </button>
+              </div>
+
+              <div className="answer-block">
+                <label>Answer:</label>
+                <textarea
+                  className="answer-textarea"
+                  value={currentAnswer}
+                  onChange={handleAnswerChange}
+                />
+              </div>
+
+              {!finished && (
+                <div className="nav-row">
+                  <button
+                    className="btn"
+                    onClick={goToNext}
+                    disabled={!hasCurrentAnswer}
+                  >
+                    Next Question
+                  </button>
+                </div>
+              )}
+              <p className="status-line">
+                {hasCurrentAnswer
+                  ? finished
+                    ? "Okay, I've got what I need. Submit to get your Assessment. Let me put together your burnout assessment—I'll have it ready for you in just a moment. "
+                    : "You can move to the next question."
+                  : "Answer this question to continue."}
+              </p>
+
+              {canSubmit && (
+                <div className="control-row">
+                  <button 
+                    className="send-history-btn"
+                    onClick={sendAllToBackend}
+                    disabled={!canSubmit}>
+                    Submit all answers for evaluation
+                  </button>
+                </div>
+              )}
+            </>
+          )}
         </>
       )}
     </div>
