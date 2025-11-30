@@ -194,18 +194,6 @@ const VoiceInterview: React.FC = () => {
     };
   }, []);
 
-  async function submitContact(email: string, phone?: string) {
-    const res = await fetch('/api/subscribe', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, phone }),
-    })
-  
-    if (!res.ok) {
-      console.log("error", res);
-    }
-  }
-
   const startListening = () => {
     if (!recognitionRef.current) return;
     if (isRecognizingRef.current) {
