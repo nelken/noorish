@@ -19,7 +19,7 @@ const QUESTIONS: Record<number, Question> = {
     id: 1,
     value:
       "Tell me about the last time you felt completely wiped out. What was happening that day?",
-    children: ["During a typical week, how many days do you feel that way?"],
+    children: ["Sorry to hear it. During a typical week, how many days do you feel that way?"],
   },
   2: {
     id: 2,
@@ -432,7 +432,7 @@ const VoiceInterview: React.FC = () => {
         <span className="status-pill">{status}</span>
       </div>
 
-      <h1>Burnout Assessment</h1>
+      <h1>Noorish Burnout Assessment</h1>
 
       <p className="question-text">{currentQuestion.value}</p>
 
@@ -443,19 +443,10 @@ const VoiceInterview: React.FC = () => {
         >
           Start/Resume Listening
         </button>
-
-        {finished && (
-          <button 
-            className="send-history-btn"
-            onClick={sendAllToBackend}
-            disabled={!canSubmit}>
-            Submit all answers for evaluation
-          </button>
-        )}
       </div>
 
       <div className="answer-block">
-        <label>Recognized Answer:</label>
+        <label>Answer:</label>
         <textarea
           className="answer-textarea"
           value={currentAnswer}
@@ -463,22 +454,35 @@ const VoiceInterview: React.FC = () => {
         />
       </div>
 
-      <div className="nav-row">
-        <button
-          className="btn"
-          onClick={goToNext}
-          disabled={finished || !hasCurrentAnswer}
-        >
-          Next Question
-        </button>
-      </div>
+      {!finished && (
+        <div className="nav-row">
+          <button
+            className="btn"
+            onClick={goToNext}
+            disabled={!hasCurrentAnswer}
+          >
+            Next Question
+          </button>
+        </div>
+      )}
       <p className="status-line">
         {hasCurrentAnswer
           ? finished
-            ? "Okay, I've got what I need. Submit to get your evaluation. Let me put together your burnout assessment—I'll have it ready for you in just a moment. "
+            ? "Okay, I've got what I need. Submit to get your Assessment. Let me put together your burnout assessment—I'll have it ready for you in just a moment. "
             : "You can move to the next question."
           : "Answer this question to continue."}
       </p>
+
+      {canSubmit && (
+        <div className="control-row">
+          <button 
+            className="send-history-btn"
+            onClick={sendAllToBackend}
+            disabled={!canSubmit}>
+            Submit all answers for evaluation
+          </button>
+        </div>
+      )}
 
       {evaluation && (
         <div className="evaluation-block">
