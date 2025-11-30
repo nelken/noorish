@@ -90,6 +90,10 @@ const VoiceInterview: React.FC = () => {
   );
   const [started, setStarted] = useState<boolean>(false);
   const [status, setStatus] = useState<string>("Idle");
+  const [submitting, setSubmitting] = useState<boolean>(false);
+  const [showContactForm, setShowContactForm] = useState<boolean>(false);
+  const [contactEmail, setContactEmail] = useState<string>("");
+  const [contactPhone, setContactPhone] = useState<string>("");
   const [evaluation, setEvaluation] = useState<string>("");
   const [scorePercentage, setScorePercentage] = useState<number>(0);
   const [audioUnlocked, setAudioUnlocked] = useState<boolean>(false);
@@ -398,6 +402,9 @@ const VoiceInterview: React.FC = () => {
   }
 
   async function sendAllToBackend() {
+    if (submitting) return;
+    setSubmitting(true);
+    setStatus("Submitting answers…");
     const combined = combineMessages(QUESTION_SEQUENCE, answers);
   
     const res = await fetch("/api/query", {
@@ -420,6 +427,8 @@ const VoiceInterview: React.FC = () => {
       }
     } catch (e) {
       console.warn("Failed to parse JSON from model, falling back to raw text", e);
+    } finally {
+      setSubmitting(false);
     }
     
     
@@ -499,14 +508,62 @@ const VoiceInterview: React.FC = () => {
                   : "Answer this question to continue."}
               </p>
 
-              {canSubmit && (
+              {canSubmit && !evaluation && (
                 <div className="control-row">
-                  <button 
-                    className="send-history-btn"
-                    onClick={sendAllToBackend}
-                    disabled={!canSubmit}>
-                    Submit all answers for evaluation
-                  </button>
+                  {!showContactForm ? (
+                    <button 
+                      className="send-history-btn"
+                      onClick={() => setShowContactForm(true)}
+                      disabled={!canSubmit}>
+                      Submit all answers for evaluation
+                    </button>
+                  ) : (
+                    <div className="contact-form">
+                      <p>Please share your email address or phone number to receive the report.</p>
+                      <div className="contact-inputs">
+                        <label>
+                          Email
+                          <input
+                            type="email"
+                            value={contactEmail}
+                            onChange={e => setContactEmail(e.target.value)}
+                            placeholder="you@example.com"
+                          />
+                        </label>
+                        <label>
+                          Phone
+                          <input
+                            type="tel"
+                            value={contactPhone}
+                            onChange={e => setContactPhone(e.target.value)}
+                            placeholder="(555) 555-5555"
+                          />
+                        </label>
+                      </div>
+                      <div className="contact-actions">
+                        <button
+                          className="btn btn-primary"
+                          onClick={() => {
+                            setShowContactForm(false);
+                            sendAllToBackend();
+                          }}
+                          disabled={submitting}
+                        >
+                          Continue to your report
+                        </button>
+                        <button
+                          className="btn btn-quiet"
+                          onClick={() => {
+                            setShowContactForm(false);
+                            sendAllToBackend();
+                          }}
+                          disabled={submitting}
+                        >
+                          Skip and continue
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </>
