@@ -92,6 +92,7 @@ const VoiceInterview: React.FC = () => {
   const [status, setStatus] = useState<string>("Idle");
   const [evaluation, setEvaluation] = useState<string>("");
   const [scorePercentage, setScorePercentage] = useState<number>(0);
+  const [audioUnlocked, setAudioUnlocked] = useState<boolean>(false);
 
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const currentIndexRef = useRef<number>(0); // keep in sync with currentIndex for callbacks
@@ -199,7 +200,19 @@ const VoiceInterview: React.FC = () => {
     shouldListenRef.current = true;
     try {
       recognitionRef.current?.start();
-    } catch (err) {
+    } catch (err: any) {
+      if (err?.name === "InvalidStateError") {
+        setTimeout(() => {
+          if (!shouldListenRef.current || isRecognizingRef.current) return;
+          try {
+            recognitionRef.current?.start();
+          } catch (retryErr) {
+            console.warn("Recognition retry failed", retryErr);
+            shouldListenRef.current = false;
+          }
+        }, 200);
+        return;
+      }
       console.warn("Recognition start failed", err);
       shouldListenRef.current = false;
       setStatus(
@@ -212,6 +225,23 @@ const VoiceInterview: React.FC = () => {
     shouldListenRef.current = false;
     isRecognizingRef.current = false;
     recognitionRef.current?.stop();
+  };
+
+  useEffect(() => {
+    // Automatically ask the current question when it becomes active,
+    // but only after audio playback has been unlocked by a user gesture.
+    if (!audioUnlocked) return;
+    speakCurrentQuestion();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentIndex, audioUnlocked]);
+
+  const handleAskAndListen = () => {
+    // First user tap unlocks audio, subsequent taps re-ask immediately.
+    if (!audioUnlocked) {
+      setAudioUnlocked(true);
+      return;
+    }
+    speakCurrentQuestion();
   };
 
   const speakCurrentQuestion = async () => {
@@ -276,22 +306,25 @@ const VoiceInterview: React.FC = () => {
       audio.addEventListener("ended", handleEnded);
       audio.addEventListener("error", handleError);
 
-      setStatus("Asking question…");
-      audio
-        .play()
-        .catch(err => {
-          console.error("Unable to ask question", err);
-          audio.removeEventListener("ended", handleEnded);
-          audio.removeEventListener("error", handleError);
-          if (audioUrl) {
-            URL.revokeObjectURL(audioUrl);
-          }
-          setStatus("asking failed.");
-        });
-    } catch (err) {
-      console.error("Unable to fetch TTS audio", err);
-      if (audioUrl) {
-        URL.revokeObjectURL(audioUrl);
+    setStatus("Asking question…");
+    audio
+      .play()
+      .then(() => {
+        setAudioUnlocked(true);
+      })
+      .catch(err => {
+        console.error("Unable to ask question", err);
+        audio.removeEventListener("ended", handleEnded);
+        audio.removeEventListener("error", handleError);
+        if (audioUrl) {
+          URL.revokeObjectURL(audioUrl);
+        }
+        setStatus("Audio blocked. Tap Start/Resume Listening to allow playback.");
+      });
+  } catch (err) {
+    console.error("Unable to fetch TTS audio", err);
+    if (audioUrl) {
+      URL.revokeObjectURL(audioUrl);
       }
       setStatus("Unable to ask question.");
     }
@@ -408,25 +441,10 @@ const VoiceInterview: React.FC = () => {
 
       <div className="control-row">
         <button
-          className="btn btn-primary"
-          onClick={speakCurrentQuestion}
-        >
-          Ask This Question Out Loud
-        </button>
-
-        <button
           className="btn"
-          onClick={startListening}
+          onClick={handleAskAndListen}
         >
           Start/Resume Listening
-        </button>
-
-        <button
-          className="btn btn-quiet"
-          onClick={stopListening}
-          disabled={!listening}
-        >
-          Stop Listening
         </button>
 
         <button 
