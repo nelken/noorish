@@ -447,12 +447,14 @@ const VoiceInterview: React.FC = () => {
           Start/Resume Listening
         </button>
 
-        <button 
-          className="send-history-btn"
-          onClick={sendAllToBackend}
-          disabled={!canSubmit}>
-          Submit all answers for evaluation
-        </button>
+        {finished && (
+          <button 
+            className="send-history-btn"
+            onClick={sendAllToBackend}
+            disabled={!canSubmit}>
+            Submit all answers for evaluation
+          </button>
+        )}
       </div>
 
       <div className="answer-block">
