@@ -97,6 +97,7 @@ const VoiceInterview: React.FC = () => {
   const [contactLastName, setContactLastName] = useState<string>("");
   const [contactPhone, setContactPhone] = useState<string>("");
   const [contactError, setContactError] = useState<string>("");
+  const [contactSubmitted, setContactSubmitted] = useState<boolean>(false);
   const [evaluation, setEvaluation] = useState<string>("");
   const [scorePercentage, setScorePercentage] = useState<number>(0);
   const [audioUnlocked, setAudioUnlocked] = useState<boolean>(false);
@@ -488,6 +489,13 @@ const VoiceInterview: React.FC = () => {
               <BurnoutScale percent={scorePercentage} />
               <ReactMarkdown>{evaluation}</ReactMarkdown>
             </div>
+          ) : contactSubmitted ? (
+            <div className="evaluation-block">
+              <h2>Preparing your report</h2>
+              <p className="status-line">
+                Hang tight—building your burnout assessment now.
+              </p>
+            </div>
           ) : (
             <>
               <div className="question-meta">
@@ -624,6 +632,7 @@ const VoiceInterview: React.FC = () => {
                             }
                             setContactError("");
                             setShowContactForm(false);
+                            setContactSubmitted(true);
                             await submitContact();
                             await sendAllToBackend();
                           }}
