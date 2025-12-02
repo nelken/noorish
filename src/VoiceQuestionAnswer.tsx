@@ -93,6 +93,8 @@ const VoiceInterview: React.FC = () => {
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [showContactForm, setShowContactForm] = useState<boolean>(false);
   const [contactEmail, setContactEmail] = useState<string>("");
+  const [contactFirstName, setContactFirstName] = useState<string>("");
+  const [contactLastName, setContactLastName] = useState<string>("");
   const [contactPhone, setContactPhone] = useState<string>("");
   const [contactError, setContactError] = useState<string>("");
   const [evaluation, setEvaluation] = useState<string>("");
@@ -262,14 +264,17 @@ const VoiceInterview: React.FC = () => {
 
   async function submitContact() {
     if (!contactEmail && !contactPhone) return;
+    const payload = {
+      first_name: contactFirstName.trim() || null,
+      last_name: contactLastName.trim() || null,
+      email: contactEmail.trim() || null,
+      phone: contactPhone.trim() || null,
+    };
     try {
       await fetch("/api/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: contactEmail || null,
-          phone: contactPhone || null,
-        }),
+        body: JSON.stringify(payload),
       });
     } catch (err) {
       console.warn("Contact submission failed", err);
@@ -532,7 +537,7 @@ const VoiceInterview: React.FC = () => {
               </p>
 
               {canSubmit && !evaluation && (
-                <div className="control-row">
+                <div className="control-row contact-row">
                   {!showContactForm ? (
                     <button 
                       className="send-history-btn"
@@ -542,9 +547,33 @@ const VoiceInterview: React.FC = () => {
                     </button>
                   ) : (
                     <div className="contact-form">
-                      <p>Please share your email address or phone number to receive the report.</p>
+                      <p>Please share your name and email address or phone number to receive the report.</p>
                       <div className="contact-inputs">
                         <label>
+                          First name
+                          <input
+                            type="text"
+                            value={contactFirstName}
+                            onChange={e => {
+                              setContactFirstName(e.target.value);
+                              setContactError("");
+                            }}
+                            placeholder="Your first name"
+                          />
+                        </label>
+                        <label>
+                          Last name
+                          <input
+                            type="text"
+                            value={contactLastName}
+                            onChange={e => {
+                              setContactLastName(e.target.value);
+                              setContactError("");
+                            }}
+                            placeholder="Your last name"
+                          />
+                        </label>
+                        <label className="email-field">
                           Email
                           <input
                             type="email"

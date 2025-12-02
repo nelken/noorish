@@ -18,14 +18,14 @@ export default async function handler(req, res) {
 
   const payload =
     typeof req.body === "string" ? JSON.parse(req.body) : (req.body ?? {});
-  const { email, phone } = payload;
+  const { email, phone, first_name, last_name } = payload;
 
   // basic validation
   if (!email) return res.status(400).json({ error: 'email required' })
 
   const { error } = await supabase
     .from('contacts')
-    .insert({ email, phone })
+    .insert({ email, phone, first_name, last_name })
 
   if (error) {
     console.error(error)
