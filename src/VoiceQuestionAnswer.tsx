@@ -111,6 +111,14 @@ const VoiceInterview: React.FC = () => {
     currentIndexRef.current = currentIndex;
   }, [currentIndex]);
 
+  const isValidEmail = (value: string) =>
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+
+  const isValidPhone = (value: string) => {
+    const digits = value.replace(/\D/g, "");
+    return digits.length >= 7;
+  };
+
   useEffect(() => {
     const SpeechRecognition =
       (window as any).SpeechRecognition ||
@@ -604,6 +612,14 @@ const VoiceInterview: React.FC = () => {
                           onClick={async () => {
                             if (!contactEmail.trim()) {
                               setContactError("Email is required to continue.");
+                              return;
+                            }
+                            if (!isValidEmail(contactEmail)) {
+                              setContactError("Enter a valid email address.");
+                              return;
+                            }
+                            if (contactPhone.trim() && !isValidPhone(contactPhone)) {
+                              setContactError("Enter a valid phone number.");
                               return;
                             }
                             setContactError("");
