@@ -1,12 +1,14 @@
 import React, { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import "./VoiceQuestionAnswer.css";
-import { QUESTIONS } from "./questions";
+import { QUESTIONS, resolveQuestionText } from "./questions";
+import type { Question } from "./questions";
 
 type QuestionItem = {
   id: string;
   value: string;
   isFollowUp: boolean;
+  question?: Question;
   parentId?: number;
   followUpIndex?: number;
   totalFollowUpsForParent?: number;
@@ -35,6 +37,7 @@ const QUESTION_SEQUENCE: QuestionItem[] = ROOT_IDS.flatMap((questionId, rootInde
       id: q.id.toString(),
       value: q.value,
       isFollowUp: false,
+      question: q,
       rootNumber,
     },
     ...followUps,
@@ -259,6 +262,9 @@ const VoiceInterview: React.FC = () => {
     }
   }
 
+  const currentQuestion = QUESTION_SEQUENCE[currentIndex]!;
+  const currentQuestionValue = getQuestionText(currentQuestion, answers, currentIndex);
+
   const speakCurrentQuestion = async () => {
     stopListening();
 
@@ -279,7 +285,7 @@ const VoiceInterview: React.FC = () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          input: currentQuestion.value,
+          input: currentQuestionValue,
         }),
       });
 
@@ -351,7 +357,6 @@ const VoiceInterview: React.FC = () => {
     setCurrentIndex(prev => Math.min(prev + 1, TOTAL_QUESTIONS - 1));
   };
 
-  const currentQuestion = QUESTION_SEQUENCE[currentIndex]!;
   const currentAnswer = answers[currentIndex] ?? "";
   const hasCurrentAnswer = currentAnswer.trim().length > 0;
   const allAnswered = answers.every(ans => ans.trim().length > 0);
@@ -378,12 +383,20 @@ const VoiceInterview: React.FC = () => {
     return `Question ${q.rootNumber}`;
   }
 
+  function getQuestionText(q: QuestionItem, answerList: string[], index: number) {
+    if (q.isFollowUp || !q.question) return q.value;
+    return resolveQuestionText(q.question, answerList, index);
+  }
+
   function combineMessages(questionOrder: QuestionItem[], answerList: string[]) {
     return questionOrder
-      .flatMap((q, i) => [
-        `${labelForQuestion(q, i)}: ${q.value}`,
-        `Answer ${i + 1}: ${answerList[i] ?? ""}`,
-      ])
+      .flatMap((q, i) => {
+        const questionText = getQuestionText(q, answerList, i);
+        return [
+          `${labelForQuestion(q, i)}: ${questionText}`,
+          `Answer ${i + 1}: ${answerList[i] ?? ""}`,
+        ];
+      })
       .join("\n\n");
   }
   function BurnoutScale({ percent }: { percent: number }) {
@@ -482,7 +495,7 @@ const VoiceInterview: React.FC = () => {
 
               <h1>Noorish Burnout Assessment</h1>
 
-              <p className="question-text">{currentQuestion.value}</p>
+              <p className="question-text">{currentQuestionValue}</p>
 
               <div className="control-row">
                 <button
