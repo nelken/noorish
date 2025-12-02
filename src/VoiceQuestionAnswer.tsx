@@ -112,6 +112,15 @@ const VoiceInterview: React.FC = () => {
     currentIndexRef.current = currentIndex;
   }, [currentIndex]);
 
+  useEffect(() => {
+    // Stop mic once the flow is finished or contact info has been submitted.
+    if (contactSubmitted || evaluation) {
+      shouldListenRef.current = false;
+      stopListening();
+      setStatus("Stopped listening.");
+    }
+  }, [contactSubmitted, evaluation]);
+
   const isValidEmail = (value: string) =>
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 
