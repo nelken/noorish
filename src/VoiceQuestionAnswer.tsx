@@ -227,15 +227,6 @@ const VoiceInterview: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentIndex, audioUnlocked, started]);
 
-  const handleAskAndListen = () => {
-    // First user tap unlocks audio, subsequent taps re-ask immediately.
-    if (!audioUnlocked) {
-      setAudioUnlocked(true);
-      return;
-    }
-    speakCurrentQuestion();
-  };
-
   const handleBegin = () => {
     if (!audioUnlocked) {
       setAudioUnlocked(true);
