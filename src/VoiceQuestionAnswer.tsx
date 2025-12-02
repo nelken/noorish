@@ -497,15 +497,6 @@ const VoiceInterview: React.FC = () => {
 
               <p className="question-text">{currentQuestionValue}</p>
 
-              <div className="control-row">
-                <button
-                  className="btn"
-                  onClick={handleAskAndListen}
-                >
-                  Start/Resume Listening
-                </button>
-              </div>
-
               <div className="answer-block">
                 <label>Answer:</label>
                 <textarea
