@@ -35,6 +35,7 @@ const DYNAMIC_GENERATORS: Record<string, DynamicQuestionGenerator> = {
 
     if (latest) {
       return `You mentioned earlier: "${latest}". What's the ripple effect of that on your day-to-day work?`;
+      // here should be the logic to decide what to ask next based on the previous answer. 
     }
 
     return "Walk me through one draining moment from your recent workday—what happened, and how did it affect you?";
