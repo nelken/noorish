@@ -55,7 +55,6 @@ export function resolveQuestionText(
   return question.value;
 }
 
-// Hardcoded questions asked one after the other
 export const QUESTIONS: Record<number, Question> = {
   1: {
     id: 1,
@@ -82,7 +81,7 @@ export const QUESTIONS: Record<number, Question> = {
     function_name: "",
   },
   4: {
-    id: 4, // todo: this needs to be dynamic
+    id: 4, 
     value:
       "When you think about your actual skills and what you can do—not how you feel—how confident are you that you're still good at your work?",
     children: ["What's one thing you've done recently that reminded you how capable you are?"],
