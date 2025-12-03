@@ -64,6 +64,8 @@ const VoiceInterview: React.FC = () => {
   const [evaluation, setEvaluation] = useState<string>("");
   const [scorePercentage, setScorePercentage] = useState<number>(0);
   const [audioUnlocked, setAudioUnlocked] = useState<boolean>(false);
+  const [classifications, setClassifications] = useState<Record<number, string>>({});
+  const [classificationLoading, setClassificationLoading] = useState<Record<number, boolean>>({});
 
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const currentIndexRef = useRef<number>(0); // keep in sync with currentIndex for callbacks
@@ -183,6 +185,8 @@ const VoiceInterview: React.FC = () => {
     };
   }, []);
 
+  // Classification now happens synchronously during navigation; no effect needed.
+
   const startListening = () => {
     if (!recognitionRef.current) return;
     if (isRecognizingRef.current) {
@@ -255,6 +259,49 @@ const VoiceInterview: React.FC = () => {
 
   const currentQuestion = QUESTION_SEQUENCE[currentIndex]!;
   const currentQuestionValue = getQuestionText(currentQuestion, answers, currentIndex);
+  const currentQuestionId = currentQuestion.question?.id;
+  const currentRequiresClassification = currentQuestionId == 2;
+    
+  async function ensureClassificationForCurrent(): Promise<boolean> {
+    if (!currentRequiresClassification || !currentQuestionId) return true;
+    if (classifications[currentQuestionId]) return true;
+
+    const answerText = answers[currentIndex]?.trim();
+    if (!answerText) return false;
+
+    setClassificationLoading(prev => ({ ...prev, [currentQuestionId]: true }));
+    setStatus("Analyzing your answer…");
+
+    try {
+      const res = await fetch("/api/classify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: answerText,
+          options: ["people", "physical", "thinking"],
+        }),
+      });
+      const data = await res.json();
+      const resolvedChoice = data?.choice;
+      
+      if (!resolvedChoice) {
+        setStatus("Could not classify. Please confirm your answer and try again.");
+        return false;
+      }
+      setClassifications(prev => ({
+        ...prev,
+        [currentQuestionId]: resolvedChoice,
+      }));
+      return true;
+    } catch (err) {
+      console.warn("Classification failed", err);
+      setStatus("Could not classify. Check your connection and try again.");
+      return false;
+    } finally {
+      setClassificationLoading(prev => ({ ...prev, [currentQuestionId]: false }));
+      setStatus("Idle");
+    }
+  }
 
   const speakCurrentQuestion = async () => {
     stopListening();
@@ -342,9 +389,11 @@ const VoiceInterview: React.FC = () => {
     }
   };
 
-  const goToNext = () => {
+  const goToNext = async () => {
     // Only advance when the current question has an answer
     if (!hasCurrentAnswer) return;
+    const ok = await ensureClassificationForCurrent();
+    if (!ok) return;
     setCurrentIndex(prev => Math.min(prev + 1, TOTAL_QUESTIONS - 1));
   };
 
@@ -376,7 +425,7 @@ const VoiceInterview: React.FC = () => {
 
   function getQuestionText(q: QuestionItem, answerList: string[], index: number) {
     if (q.isFollowUp || !q.question) return q.value;
-    return resolveQuestionText(q.question, answerList, index);
+    return resolveQuestionText(q.question, answerList, index, classifications);
   }
 
   function combineMessages(questionOrder: QuestionItem[], answerList: string[]) {
@@ -502,7 +551,10 @@ const VoiceInterview: React.FC = () => {
                   <button
                     className="btn"
                     onClick={goToNext}
-                    disabled={!hasCurrentAnswer}
+                    disabled={
+                      !hasCurrentAnswer ||
+                      !!(currentQuestionId && classificationLoading[currentQuestionId])
+                    }
                   >
                     Next Question
                   </button>

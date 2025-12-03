@@ -10,6 +10,7 @@ type DynamicQuestionContext = {
   answers: string[];
   currentIndex: number;
   question: Question;
+  classifications?: Record<number, string>;
 };
 
 type DynamicQuestionGenerator = (ctx: DynamicQuestionContext) => string;
@@ -22,7 +23,7 @@ const DYNAMIC_GENERATORS: Record<string, DynamicQuestionGenerator> = {
       .find(ans => ans.trim().length > 0);
 
     if (latest) {
-      return `You mentioned: "${latest}". Can you go one level deeper on what makes that so draining?`;
+      return `You mentioned: "${latest}". Can you go one level deeper on what that looks like?`;
     }
 
     return "Tell me more about the moment that feels most draining lately.";
@@ -40,17 +41,44 @@ const DYNAMIC_GENERATORS: Record<string, DynamicQuestionGenerator> = {
 
     return "Walk me through one draining moment from your recent workday—what happened, and how did it affect you?";
   },
+  get_cause: ({ answers, currentIndex, classifications, question }) => {
+    const latest = [...answers]
+      .slice(0, currentIndex)
+      .reverse()
+      .find(ans => ans.trim().length > 0);
+    
+
+
+    const classification = classifications?.[question.id-1]; // has to be the classification of the previous question
+
+    if (classification === "people") {
+      return `You mentioned feeling drained by people. What interactions or relationships make that show up most?${latest ? ` (you just said: "${latest}")` : ""}`;
+    }
+    if (classification === "physical") {
+      return `Sounds like the physical load is wearing on you. What parts of the day leave you most depleted physically?${latest ? ` (You just noted: "${latest}")` : ""}`;
+    }
+    if (classification === "thinking") {
+      return `It seems the mental load is heaviest. Which tasks or decisions are burning most of your focus?${latest ? ` (You just mentioned: "${latest}")` : ""}`;
+    }
+
+    if (latest) {
+      return `Tell me more about what's driving that feeling: "${latest}".`;
+    }
+    return "What’s the main thing causing your burnout right now?";
+  },
+  
 };
 
 export function resolveQuestionText(
   question: Question,
   answers: string[],
-  currentIndex: number
+  currentIndex: number,
+  classifications?: Record<number, string>
 ): string {
   if (!question.is_dynamic) return question.value;
   const generator = DYNAMIC_GENERATORS[question.function_name];
   if (generator) {
-    return generator({ answers, currentIndex, question });
+    return generator({ answers, currentIndex, question, classifications });
   }
   return question.value;
 }
@@ -68,36 +96,44 @@ export const QUESTIONS: Record<number, Question> = {
     id: 2,
     value:
       "When you hit that wiped-out feeling, what drains fastest: your patience with people, your physical energy, or your ability to think clearly?",
-    children: ["During a typical week, how many days do you feel that way?" ],
+    children: [],
     is_dynamic: false,
     function_name: "",
   },
   3: {
     id: 3,
     value:
+      "placeholder",
+    children: [],
+    is_dynamic: true,
+    function_name: "get_cause",
+  },
+  4: {
+    id: 4,
+    value:
       "These days, what part of work makes you want to just check out or stop caring?",
     children: [ "What's the story behind that? When did you start feeling this way?"],
     is_dynamic: false,
     function_name: "",
   },
-  4: {
-    id: 4, 
+  5: {
+    id: 5, 
     value:
       "When you think about your actual skills and what you can do—not how you feel—how confident are you that you're still good at your work?",
     children: ["What's one thing you've done recently that reminded you how capable you are?"],
     is_dynamic: false,
     function_name: "",
   },
-  5: {
-    id: 5,
+  6: {
+    id: 6,
     value:
       "DEEP DIVE placeholder",
     children: [],
     is_dynamic: true,
     function_name: "deep_dive_recent",
   },
-  6: {
-    id: 6,
+  7: {
+    id: 7,
     value:
       "Looking back over the last few months, is this feeling getting better, staying the same, or getting worse?",
     children: [],
