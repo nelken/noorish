@@ -49,7 +49,7 @@ export default async function handler(req, res) {
         {
           role: "user",
           content: [
-            "Pick the best matching option for the provided text.",
+            "Pick the best matching option for the provided text. If none of the options is a good fit, return NA",
             `Options: ${formattedOptions.map(o => `"${o}"`).join(", ")}`,
             `Text: ${text}`,
           ].join("\n"),
